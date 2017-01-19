@@ -11,63 +11,54 @@ This section explains how to run Everware in a container, and the different poss
   docker build -t everware .
 ```
 
-JupyterHub Dockerfile needs a ["jupyterhub_config.py"](jupyterhub_config.py) file to be present at the root of the project.
-
 ## Create user containers on same machine as the Everware one
-
-Fill the file which will contains environment variables for Everware.
-```
-  cp env.docker-local.orig env.docker-local
-```
-Define the `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and `OAUTH_CALLBACK_URL`
 
 Edit `etc/container_config.py` file to set `c.DockerSpawner.hub_ip_connect` and `c.DockerSpawner.container_ip` to the IP of your machine running the Everware container.
 
 ```
   docker run -d --name everware \
       -v /var/run/docker.sock:/var/run/docker.sock \
-      -v $PWD/etc/container_config.py:/srv/everware/etc/container_config.py \
-      --env-file=env.docker-local \
+      -v $(pwd)/etc/container_config.py:/config.py \
+      -e GITHUB_CLIENT_ID=xxx \
+      -e GITHUB_CLIENT_SECRET=xxx \
+      -e OAUTH_CALLBACK_URL=http://xxxxxx:8000/hub/oauth_callback \
       -p 8000:8000 \
       -p 8081:8081 \
-      everware /srv/everware/etc/container_config.py --no-ssl --debug
+      everware /config.py --no-ssl --debug
 ```
-
-Note that you can skip `-v $PWD/etc/container_config.py:/srv/everware/etc/container_config.py` part if you build the container after having modified the config file `etc/container_config.py`
 
 ## Create user containers on a remote Docker machine
 
-```
-  cp env.docker-remote.orig env.docker-remote
-```
-Same as before, and define `DOCKER_HOST`, the IP of your remote Docker machine.
+Edit `etc/container_config.py` file to set `c.DockerSpawner.hub_ip_connect` and `c.DockerSpawner.container_ip` to the IP of your machine running the Everware container. Define a `DOCKER_HOST` env variable and set to the IP of your remote Docker machine.
 
 ```
 docker run -d --name everware \
-    -v $PWD/etc/container_config.py:/srv/everware/etc/container_config.py \
-    --env-file=env.docker-remote \
+    -v $(pwd)/etc/container_config.py:/config.py \
+    -e GITHUB_CLIENT_ID=xxx \
+    -e GITHUB_CLIENT_SECRET=xxx \
+    -e OAUTH_CALLBACK_URL=http://xxxxxx:8000/hub/oauth_callback \
+    -e DOCKER_HOST=xxx.xxx.xxx.xxx \
     -p 8000:8000 \
     -p 8081:8081 \
-    everware /srv/everware/etc/container_config.py --no-ssl --debug
+    everware /config.py --no-ssl --debug
 ```
 
 ## Create user containers on a Docker Swarm cluster
 
-This allows to create users container on a Docker Swarm cluster.
+Edit `etc/container_swarm.py` file to set `c.DockerSpawner.hub_ip_connect` to the IP of your machine hosting Everware container. This allows to create users container on a Docker Swarm cluster. Define a `DOCKER_HOST` env variable and set to the IP of your Swarm master.
 
 ```
-  cp env.docker-swarm.orig env.docker-swarm
-```
-Define the variable, and set `DOCKER_HOST` to the IP of your Swarm master.
-
-Edit `etc/container_swarm.py` file to set `c.DockerSpawner.hub_ip_connect` to the IP of your machine hosting Everware container.
-
-```
-  docker run --rm -it --name everware \
-      -v $PWD/etc/container_swarm_config.py:/srv/everware/etc/container_swarm_config.py \
+  docker run -d --name everware \
+      -v $(pwd)/etc/container_swarm_config.py:/config.py \
       -v /home/ubuntu/docker:/etc/docker \
-      --env-file=env.docker-swarm \
+      -e GITHUB_CLIENT_ID=xxx \
+      -e GITHUB_CLIENT_SECRET=xxx \
+      -e OAUTH_CALLBACK_URL=http://xxxxxx:8000/hub/oauth_callback \
+      -e EVERWARE_WHITELIST=whitelist.txt \
+      -e DOCKER_CERT_PATH=/etc/docker \
+      -e DOCKER_HOST=tcp://xxx.xxx.xxx.xxx:2376 \
+      -e DOCKER_TLS_VERIFY=1 \
       -p 8000:8000 \
       -p 8081:8081 \
-      everware /srv/everware/etc/container_swarm_config.py --no-ssl --debug
+      everware /config.py --no-ssl --debug
 ```
